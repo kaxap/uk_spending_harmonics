@@ -47,7 +47,7 @@ procedure TForm1.btnStartClick(Sender: TObject);
 //10 + 140 Sin[(m x - d2)/d]/((m x - d2)/d)
 //x->[1..48]
 
-const MAX_ITER = 1 * 1000 * 1000;
+const MAX_ITER = 10 * 1000 * 1000;
       RESOLUTION = 100;
       RESOLUTION_STR = '.3';
       GUI_PROGRESS_STEP = 10000;
@@ -128,7 +128,7 @@ begin
     cossh := (-50 + Random(100 * RESOLUTION) / RESOLUTION) / 10;
     cosmul := (-50 + Random(100 * RESOLUTION) / RESOLUTION) / 10;
 
-    r_mul := (1 + Random(10 * RESOLUTION) / RESOLUTION);
+    r_mul := (1 + Random(30 * RESOLUTION) / RESOLUTION);
     repeat
       r_pow := (1 + Random(2 * RESOLUTION) / RESOLUTION);
     until r_pow <> 0.0;
