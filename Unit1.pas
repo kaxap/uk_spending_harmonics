@@ -129,9 +129,7 @@ begin
     cosmul := (-50 + Random(100 * RESOLUTION) / RESOLUTION) / 10;
 
     r_mul := (1 + Random(30 * RESOLUTION) / RESOLUTION);
-    repeat
-      r_pow := (1 + Random(2 * RESOLUTION) / RESOLUTION);
-    until r_pow <> 0.0;
+    r_pow := (1 + Random(2 * RESOLUTION) / RESOLUTION);
     r_koef := (1 + Random(2 * RESOLUTION) / RESOLUTION);
 
     sum := 0.0;
