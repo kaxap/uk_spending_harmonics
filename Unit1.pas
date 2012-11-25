@@ -47,7 +47,7 @@ procedure TForm1.btnStartClick(Sender: TObject);
 //10 + 140 Sin[(m x - d2)/d]/((m x - d2)/d)
 //x->[1..48]
 
-const MAX_ITER = 1 * 1000 * 1000;
+const MAX_ITER = 1000 * 1000 * 1000;
       RESOLUTION = 100;
       RESOLUTION_STR = '.3';
       GUI_PROGRESS_STEP = 10000;
