@@ -47,11 +47,12 @@ procedure TForm1.btnStartClick(Sender: TObject);
 //10 + 140 Sin[(m x - d2)/d]/((m x - d2)/d)
 //x->[1..48]
 
-const MAX_ITER = 1000 * 1000 * 1000;
+const MAX_ITER = 1 * 1000 * 1000;
       RESOLUTION = 100;
       RESOLUTION_STR = '.3';
       GUI_PROGRESS_STEP = 10000;
       SIZE_PATH_ALLOCATION = 1000;
+      SAMPLE_LENGTH = 48;
 
   function func(const x, shift, divizor, mul, cossh, cosmul,
     r_mul, r_pow, r_koef: Real): Real;
@@ -69,17 +70,27 @@ const MAX_ITER = 1000 * 1000 * 1000;
 var
   i, j, k, x: Integer;
   m, r: Real;
+
+  //Pearson's correlation
   cor, max_cor, cor_m, cor_shift, cor_mul, cor_cossh, cor_cosmul: Real;
   cor_r_mul, cor_r_pow, cor_r_koef: Real;
+
+  //sum
   sum, min_sum, sum_m, sum_shift, sum_mul, sum_cossh, sum_cosmul: Real;
   sum_r_mul, sum_r_pow, sum_r_koef: Real;
+
   shift, mul, cossh, cosmul, r_mul, r_pow, r_koef: Real;
+
+  //least squares
+  lsq, min_lsq, lsq_m, lsq_shift, lsq_mul, lsq_cossh, lsq_cosmul: Real;
+  lsq_r_mul, lsq_r_pow, lsq_r_koef: Real;
+
   divizor: Real;
   step: Integer;
   v, s: String;
   path_m, path_shift, path_mul: array of Real;
   path_index_m, path_index_shift: Integer;
-  simulation: array[1..48] of Real;
+  simulation: array[1..SAMPLE_LENGTH] of Real;
   simulation_mean, simulation_dist: Real;
 begin
 
@@ -105,6 +116,8 @@ begin
   Randomize;
   max_cor := 0.0;
   min_sum := 10000000.0;
+  min_lsq := 10000000.0;
+
   ProgressBar1.Position := 0;
   ProgressBar1.Max := MAX_ITER;
   step := 0;
@@ -133,9 +146,10 @@ begin
     r_koef := (1 + Random(2 * RESOLUTION) / RESOLUTION);
 
     sum := 0.0;
+    lsq := 0.0;
     for x := Low(simulation) to High(simulation) do
     begin
-      divizor := (m*x - 48*m);
+      divizor := (m*x - SAMPLE_LENGTH*m);
       if divizor <> 0.0 then
         r := func(x, shift, divizor, mul, cossh, cosmul, r_mul, r_pow, r_koef)
       else
@@ -144,6 +158,7 @@ begin
 
       sum := sum + Abs(r - data[x]);
       simulation[x] := r;
+      lsq := lsq + Sqr(r - data[x]);
     end;
 
     //get correlation
@@ -189,6 +204,19 @@ begin
       sum_r_koef := r_koef;
     end;
 
+    if lsq < min_lsq then
+    begin
+      min_lsq := lsq;
+      lsq_m := m;
+      lsq_shift := shift;
+      lsq_mul := mul;
+      lsq_cossh := cossh;
+      lsq_cosmul := cosmul;
+      lsq_r_mul := r_mul;
+      lsq_r_pow := r_pow;
+      lsq_r_koef := r_koef;
+    end;
+
     Inc(step);
 
     if step >= GUI_PROGRESS_STEP then
@@ -204,8 +232,9 @@ begin
   AddMessage('Simulation complete.', clBlack, 14, [fsBold]);
 
   //output data
-  AddMessage(Format('Max correlation = %.3f', [max_cor]), $CC7800, 14, [fsBold]);
   v := '%' + RESOLUTION_STR + 'f';
+
+  AddMessage(Format('Max correlation = %.3f', [max_cor]), $CC7800, 14, [fsBold]);
   s := Format('Values for correlation: m = %s, shift = %s, mul = %s, cossh = %s, cosmul = %s, r_mul = %s, r_pow = %s, r_koef = %s', [v, v, v, v, v, v, v, v]);
   AddMessage(Format(s, [cor_m, cor_shift, cor_mul, cor_cossh, cor_cosmul, cor_r_mul, cor_r_pow, cor_r_koef]), clRed, 14, [fsBold]);
 
@@ -213,10 +242,15 @@ begin
   s := Format('Values for sum: m = %s, shift = %s, mul = %s, cossh = %s, cosmul = %s, r_mul = %s, r_pow = %s, r_koef = %s', [v, v, v, v, v, v, v, v]);
   AddMessage(Format(s, [sum_m, sum_shift, sum_mul, sum_cossh, sum_cosmul, sum_r_mul, sum_r_pow, sum_r_koef]), clRed, 14, [fsBold]);
 
+  AddMessage(Format('Min lsq = %.3f', [min_lsq]), $CC7800, 14, [fsBold]);
+  s := Format('Values for least squares: m = %s, shift = %s, mul = %s, cossh = %s, cosmul = %s, r_mul = %s, r_pow = %s, r_koef = %s', [v, v, v, v, v, v, v, v]);
+  AddMessage(Format(s, [lsq_m, lsq_shift, lsq_mul, lsq_cossh, lsq_cosmul, lsq_r_mul, lsq_r_pow, lsq_r_koef]), clRed, 14, [fsBold]);
+
+  //output data for max correlation
   s := '';
   for x := Low(data) to High(data) do
   begin
-    divizor := (cor_m*x - 48*cor_m);
+    divizor := (cor_m*x - SAMPLE_LENGTH*cor_m);
     if divizor <> 0.0 then
       r := func(x, cor_shift, divizor, cor_mul, cor_cossh, cor_cosmul,
         cor_r_mul, cor_r_pow, cor_r_koef)
@@ -232,10 +266,11 @@ begin
   AddMessage('Output data for correlation:', clBlack, 14, [fsUnderline]);
   AddMessage(s, clBlack, 10, []);
 
+  //output data for minimum area
   s := '';
   for x := Low(data) to High(data) do
   begin
-    divizor := (sum_m*x - 48*sum_m);
+    divizor := (sum_m*x - SAMPLE_LENGTH*sum_m);
     if divizor <> 0.0 then
       r := func(x, sum_shift, divizor, sum_mul, sum_cossh, sum_cosmul,
         sum_r_mul, sum_r_pow, sum_r_koef)
@@ -249,6 +284,26 @@ begin
   end;
 
   AddMessage('Output data for sum:', clBlack, 14, [fsUnderline]);
+  AddMessage(s, clBlack, 10, []);
+
+  //output data for least squares
+  s := '';
+  for x := Low(data) to High(data) do
+  begin
+    divizor := (lsq_m*x - SAMPLE_LENGTH*lsq_m);
+    if divizor <> 0.0 then
+      r := func(x, lsq_shift, divizor, lsq_mul, lsq_cossh, lsq_cosmul,
+        lsq_r_mul, lsq_r_pow, lsq_r_koef)
+    else
+      r := lsq_shift + lsq_mul;
+
+    if x <> High(data) then
+      s := s + Format('%f, ', [r])
+    else
+      s := s + Format('%f', [r]);
+  end;
+
+  AddMessage('Output data for least squares:', clBlack, 14, [fsUnderline]);
   AddMessage(s, clBlack, 10, []);
 
   if MessageBox(Handle, 'Output paths?', 'paths', MB_YESNO) = idYes then
